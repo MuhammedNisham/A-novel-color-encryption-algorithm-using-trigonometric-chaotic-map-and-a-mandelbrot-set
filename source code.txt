@@ -1,0 +1,188 @@
+unction anss= trignox(x,y)
+w=100*pi;
+r=2;
+H = double(zeros(256,256,1));
+H= reshape(H,[1,65536]);
+for n=1:65536
+ x=sind(w*x)-(r*(sind(w*y)));
+ y=cosd(w*x);
+ H(n)=x;
+end
+anss=H;
+end
+function anss= trignoy(x,y)
+w=100*pi;
+r=2;
+H = double(zeros(256,256,1));
+H= reshape(H,[1,65536]);
+for n=1:65536
+ x=sind(w*x)-(r*(sind(w*y)));
+ y=cosd(w*x);
+ H(n)=y;
+end
+anss=H;
+end
+function anss= trignoy(x,y)
+w=100*pi;
+r=2;
+H = double(zeros(256,256,1));
+H= reshape(H,[1,65536]);
+for n=1:65536
+ x=sind(w*x)-(r*(sind(w*y)));
+ y=cosd(w*x);
+ H(n)=y;
+end
+anss=H;
+end
+function cipherimage=try_new_trig(a)
+%STEP 1 : input original image 
+ %a=imread('baboon.png');
+ %ori=entropy(a);
+ figure;
+ imshow(a);title('lena original');
+%figure;
+%y=histogram(a);title('histogram of lena');
+%STEP 2: Decompose in to R,G,B
+ R=a(:,:,1); 
+ G=a(:,:,2);
+ B=a(:,:,3); 
+ R = reshape(R,[1,65536]);
+ G = reshape(G,[1,65536]);
+ B = reshape(B,[1,65536]);
+ R=uint8(R);
+ G=uint8(G);
+ B=uint8(B);
+%STEP 3: Chaos sequence generation 
+ X1=trignox(1.5,0.5);
+ X2=trignoy(1.5,0.5);
+ X3=X1;
+ % Normalized chaotic sequence (arnold)
+ S1=mod((X1*(10.^10)),256);
+ S2=mod((X2*(10.^10)),256);
+ S3=mod((X3*(10.^10)),256);
+ S1=uint8(S1);
+ S2=uint8(S2);
+ S3=uint8(S3);
+%STEP 4: xor operation on R,G,B and chaotic sequence (S1,S2,S3):
+ XDR=[];
+ XDG=[];
+ XDB=[];
+ for i=1:65536 
+ XDR(i)=bitxor(R(i),S1(i));
+ XDG(i)=bitxor(G(i),S2(i));
+ XDB(i)=bitxor(B(i),S3(i));
+ end
+%STEP 5: Calculating Hamming distance on R,G,B with respect to chaotic sequence:
+ HR=[]; 
+ HG=[];
+ HB=[];
+ for i=1:65536
+HR(i)=disthamming(R(i),S1(i));
+ HG(i)=disthamming(G(i),S2(i));
+ HB(i)=disthamming(B(i),S3(i));
+ end
+%for decryption
+rhde=uint8(HR);
+ghde=uint8(HG);
+bhde=uint8(HB);
+rhde = reshape(rhde,[256,256]);
+imwrite(rhde,'rhde.png');
+ghde = reshape(ghde,[256,256]);
+imwrite(ghde,'ghde.png');
+bhde = reshape(bhde,[256,256]);
+imwrite(bhde,'bhde.png');
+%STEP 6: XOR operation on Hamming distance and Chaotic Sequence:
+ XR=[];
+ XG=[];
+ XB=[];
+ for i=1:65536
+ XR(i)=bitxor(HR(i),S1(i));
+ XG(i)=bitxor(HG(i),S2(i));
+ XB(i)=bitxor(HB(i),S3(i));
+ end
+%STEP 7: confusion and permutation by mandelbrotset 
+ XDR=reshape(XDR,256,256);
+ XDG=reshape(XDG,256,256);
+ XDB=reshape(XDB,256,256);
+ %Calling Mandelbrot set function
+ mdset=md();
+ %find max element
+ %1=coloumn min 2=row min
+ rxtp=XDR;
+ gxtp=XDG;
+ bxtp=XDB;
+ rm=[];
+ gm=[];
+ bm=[];
+ mdm=[];
+ for j=1:256
+ mdm(j)=maximum(mdset,j,1);
+ rm(j)=maximum(XDR,j,2);
+ gm(j)=maximum(XDG,j,2);
+ bm(j)=maximum(XDB,j,2);
+ 
+ %shift to right with mdm check
+ if mdm(j)<=rm(j) 
+ rxtp=shiftlr(rxtp,mdm(j),j);
+[2:08 PM, 4/27/2024] .: %rxt=rxtp;
+ else
+ rxtp=shiftrr(rxtp,mdm(j),j);
+ end
+ 
+ if mdm(j)<=gm(j) 
+ gxtp=shiftlr(gxtp,mdm(j),j);
+ %gxt=gxtp;
+ else
+ gxtp=shiftrr(gxtp,mdm(j),j);
+ end
+ 
+ if mdm(j)<=bm(j) 
+ bxtp=shiftlr(bxtp,mdm(j),j);
+ %bxt=bxtp;
+ else
+ bxtp=shiftrr(bxtp,mdm(j),j);
+ end
+ end
+ 
+%STEP 8: diffusion process
+ SR=reshape(rxtp,1,65536);
+ SG=reshape(gxtp,1,65536);
+ SB=reshape(bxtp,1,65536);
+ 
+ % diffusion using XORed Hamming and Confused R,G,B
+ SR=double(SR);
+ SG=double(SG);
+ SB=double(SB);
+ for i=1:65536
+ CR(i)=mod(((bitxor(SR(i),XR(i)))),256);
+ CG(i)=mod(((bitxor(SG(i),XG(i)))),256);
+ CB(i)=mod(((bitxor(SB(i),XB(i)))),256);
+ end
+ %reshape into 2d
+ CR=reshape(CR,256,256);
+ CG=reshape(CG,256,256);
+ CB=reshape(CB,256,256);
+ CR=uint8(CR);
+ CG=uint8(CG);
+ CB=uint8(CB);
+ 
+ %STEP 9: Creation of Cipher image
+ rentropy=entropy(CR);
+ gentropy=entropy(CG);
+ bentropy=entropy(CB);
+ figure;
+ imshow(CR);title('diffused red');
+ imwrite(CR,'diffused red.png');
+[2:09 PM, 4/27/2024] .: imshow(CG);title('diffused green');
+ imwrite(CG,'diffused green.png');
+ imshow(CB);title('diffused blue');
+ imwrite(CB,'diffused blue.png');
+ cipherimage=cat(3,CR,CG,CB);
+ figure;
+ imshow(cipherimage);title('cipherimage');
+ imwrite(cipherimage,'cipherimage.png'); 
+ ric=imread('cipherimage.png');
+ cipentropy=entropy(ric);
+ re=ric;
+ disp(cipentropy);
+end
