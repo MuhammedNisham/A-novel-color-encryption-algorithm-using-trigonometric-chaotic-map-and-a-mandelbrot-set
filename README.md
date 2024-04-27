@@ -1,1 +1,1 @@
-# A-novel-color-encryption-algorithm-using-trigonometric-chaotic-map-and-a-mandelbrot-set
+Designed novel image encryption method using chaotic maps and DNA operations for enhanced security against manipulation. Encrypts color channels independently and employs Mandelbrot Set algorithm for added protection, contributing to privacy safeguarding.
